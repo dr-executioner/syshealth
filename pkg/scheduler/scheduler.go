@@ -1,70 +1,55 @@
 package scheduler
 
 import (
+	"encoding/json"
 	"fmt"
+	"time"
+
 	"syshealth/pkg/checks"
 	"syshealth/pkg/config"
 	"syshealth/pkg/reporter"
 	"syshealth/pkg/storage"
-	"time"
 )
 
-func Start(cfg *config.Config) {
-	fmt.Println("scheduler: starting loop, interval:", cfg.Interval)
+func StartScheduler(cfg *config.Config) {
+	fmt.Printf("scheduler: starting loop, interval: %s\n", cfg.Interval)
 
-	state, err := storage.LoadState(cfg.StateFilePath)
-	if err != nil {
-		fmt.Println("error loading state:", err)
-		state = make(storage.State)
-	}
-
-	runOnce := func() {
-		results := []checks.CheckResult{}
-		results = append(results, checks.DiskEncryption())
-		results = append(results, checks.OSUpdates())
-		results = append(results, checks.Antivirus())
-		results = append(results, checks.SleepTimeout())
-
-		changed := false
-		newState := make(storage.State)
-		for _, r := range results {
-			newState[r.Name] = r
-			old, ok := state[r.Name]
-			if !ok || old.OK != r.OK || old.Detail != r.Detail {
-				changed = true
-			}
+	for {
+		results := []checks.CheckResult{
+			checks.DiskEncryption(),
+			checks.OSUpdates(),
+			checks.SleepTimeout(),
+			checks.Antivirus(),
 		}
 
-		if changed {
+		current := map[string]interface{}{
+			"checks": results,
+		}
+
+		// Load previous state from cfg.StateFilePath
+		prev, _ := storage.LoadState(cfg.StateFilePath)
+
+		// Compare states
+		if !stateEqual(prev, current) {
 			fmt.Println("changes detected, sending report")
-			if err := reporter.Send(cfg, results); err != nil {
-				fmt.Println("report send error:", err)
-			} else {
-				// save new state
-				if err := storage.SaveState(cfg.StateFilePath, newState); err != nil {
-					fmt.Println("error saving state:", err)
-				}
-				state = newState
+			err := reporter.Send(cfg, results)
+			if err == nil {
+				_ = storage.SaveState(cfg.StateFilePath, current)
 			}
 		} else {
-			fmt.Println("no changes detected")
+			fmt.Println("no changes, skipping report")
 		}
-	}
 
-	// first run immediately
-	runOnce()
-
-	if cfg.RunOnceForDemo {
-		fmt.Println("run once mode, exiting")
-		return
-	}
-
-	ticker := time.NewTicker(cfg.Interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			runOnce()
+		if cfg.RunOnceForDemo {
+			break
 		}
+
+		time.Sleep(cfg.Interval)
 	}
+}
+
+func stateEqual(a, b map[string]interface{}) bool {
+	aj, _ := json.Marshal(a)
+	bj, _ := json.Marshal(b)
+	return string(aj) == string(bj)
 }

@@ -1,6 +1,11 @@
 package config
 
-import "time"
+import (
+	"os"
+	"path/filepath"
+	util "syshealth/internal/utils"
+	"time"
+)
 
 type Config struct {
 	Interval       time.Duration
@@ -11,11 +16,14 @@ type Config struct {
 }
 
 func Default() *Config {
+	home, _ := os.UserHomeDir()
+	stateFile := filepath.Join(home, ".system_health.json")
+
 	return &Config{
-		Interval:       1 * time.Minute,
-		StateFilePath:  "../logs/system_health.json",
-		BackendAPI:     "http://127.0.0.1:8080/api/report",
-		MachineID:      "dev-machine-001",
+		Interval:       15 * time.Minute,
+		StateFilePath:  stateFile,
+		BackendAPI:     util.GetAPIURL(),
+		MachineID:      util.GetMachineID(),
 		RunOnceForDemo: false,
 	}
 }

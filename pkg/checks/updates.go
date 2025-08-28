@@ -51,7 +51,7 @@ func OSUpdates() CheckResult {
 		return res
 
 	case "linux":
-		cmd := exec.Command("apt-get", "-s", "upgrade")
+		cmd := exec.Command("dnf", "check-update")
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			res.OK = false
