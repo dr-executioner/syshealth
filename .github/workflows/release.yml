@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"   # only run on version tags like v1.0.0
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+
+      - name: Build binaries
+        run: |
+          mkdir -p build
+          GOOS=linux   GOARCH=amd64 go build -o build/syshealth-linux-amd64
+          GOOS=darwin  GOARCH=amd64 go build -o build/syshealth-darwin-amd64
+          GOOS=darwin  GOARCH=arm64 go build -o build/syshealth-darwin-arm64
+          GOOS=windows GOARCH=amd64 go build -o build/syshealth-windows-amd64.exe
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/*
+
