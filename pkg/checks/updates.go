@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"syshealth/pkg/structs"
 )
 
 type UpdateDetail struct {
@@ -15,7 +16,7 @@ type UpdateDetail struct {
 	Packages         []string `json:"packages"`
 }
 
-func OSUpdates() CheckResult {
+func OSUpdates() structs.CheckResult {
 	switch runtime.GOOS {
 	case "linux":
 		content, err := os.ReadFile("/etc/os-release")
@@ -45,7 +46,7 @@ func OSUpdates() CheckResult {
 	}
 }
 
-func parseUpdates(cmd string, args ...string) CheckResult {
+func parseUpdates(cmd string, args ...string) structs.CheckResult {
 	c := exec.Command(cmd, args...)
 	var out bytes.Buffer
 	c.Stdout = &out
@@ -57,7 +58,6 @@ func parseUpdates(cmd string, args ...string) CheckResult {
 		return failDetail("os_updates", UpdateDetail{}, "error running "+cmd+": "+err.Error())
 	}
 
-	// Very naive parsing: split lines into "packages"
 	lines := strings.Split(output, "\n")
 	var pkgs []string
 
@@ -66,15 +66,12 @@ func parseUpdates(cmd string, args ...string) CheckResult {
 		if line == "" {
 			continue
 		}
-		// heuristics: look for package names depending on command
 		if cmd == "apt-get" && strings.Contains(line, "Inst ") {
-			// e.g., "Inst firefox [version]"
 			fields := strings.Fields(line)
 			if len(fields) > 1 {
 				pkgs = append(pkgs, fields[1])
 			}
 		} else if cmd == "dnf" || cmd == "checkupdates" {
-			// usually: "pkgname version"
 			fields := strings.Fields(line)
 			if len(fields) > 0 {
 				pkgs = append(pkgs, fields[0])
@@ -99,17 +96,16 @@ func parseUpdates(cmd string, args ...string) CheckResult {
 		Packages:         pkgs,
 	}
 
-	// JSON-encode detail
 	detailJSON, _ := json.Marshal(detail)
 
-	return CheckResult{
+	return structs.CheckResult{
 		Name:   "os_updates",
 		OK:     !detail.UpdatesAvailable,
 		Detail: string(detailJSON),
 	}
 }
 
-func failDetail(name string, d UpdateDetail, msg string) CheckResult {
+func failDetail(name string, d UpdateDetail, msg string) structs.CheckResult {
 	detail := UpdateDetail{
 		UpdatesAvailable: false,
 		Count:            0,
@@ -117,5 +113,5 @@ func failDetail(name string, d UpdateDetail, msg string) CheckResult {
 	}
 	detailJSON, _ := json.Marshal(detail)
 
-	return CheckResult{Name: name, OK: false, Detail: msg + " | " + string(detailJSON)}
+	return structs.CheckResult{Name: name, OK: false, Detail: msg + " | " + string(detailJSON)}
 }

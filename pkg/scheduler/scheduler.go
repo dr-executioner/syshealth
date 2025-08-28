@@ -9,13 +9,14 @@ import (
 	"syshealth/pkg/config"
 	"syshealth/pkg/reporter"
 	"syshealth/pkg/storage"
+	"syshealth/pkg/structs"
 )
 
 func StartScheduler(cfg *config.Config) {
 	fmt.Printf("scheduler: starting loop, interval: %s\n", cfg.Interval)
 
 	for {
-		results := []checks.CheckResult{
+		results := []structs.CheckResult{
 			checks.DiskEncryption(),
 			checks.OSUpdates(),
 			checks.SleepTimeout(),

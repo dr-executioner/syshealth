@@ -6,10 +6,11 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syshealth/pkg/structs"
 )
 
-func SleepTimeout() CheckResult {
-	res := CheckResult{Name: "sleep_timeout"}
+func SleepTimeout() structs.CheckResult {
+	res := structs.CheckResult{Name: "sleep_timeout"}
 	switch runtime.GOOS {
 	case "windows":
 		cmd := exec.Command("powershell", "-Command", "(powercfg -query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE).FriendlyName")

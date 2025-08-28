@@ -5,19 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"syshealth/pkg/checks"
 	"syshealth/pkg/config"
+	"syshealth/pkg/structs"
 	"time"
 )
 
 type Report struct {
-	MachineID string               `json:"machine_id"`
-	Timestamp time.Time            `json:"timestamp"`
-	Checks    []checks.CheckResult `json:"checks"`
+	MachineID string                `json:"machine_id"`
+	Timestamp time.Time             `json:"timestamp"`
+	Checks    []structs.CheckResult `json:"checks"`
 }
 
 // Send posts the report to backend. For now we do a simple POST with retries.
-func Send(cfg *config.Config, results []checks.CheckResult) error {
+func Send(cfg *config.Config, results []structs.CheckResult) error {
 	r := Report{
 		MachineID: cfg.MachineID,
 		Timestamp: time.Now().UTC(),
