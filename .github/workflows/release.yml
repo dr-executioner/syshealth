@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*"   # only run on version tags like v1.0.0
+      - "v*.*.*"   
 
 jobs:
   release:
@@ -28,5 +28,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: build/*
-
+          files: |
+            build/syshealth-linux-amd64
+            build/syshealth-darwin-amd64
+            build/syshealth-darwin-arm64
+            build/syshealth-windows-amd64.exe
