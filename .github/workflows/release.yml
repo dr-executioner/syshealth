@@ -3,11 +3,12 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*"   
+      - "v*.*.*"
 
 jobs:
   release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -19,11 +20,14 @@ jobs:
 
       - name: Build binaries
         run: |
+          set -e  # stop if any build fails
           mkdir -p build
-          GOOS=linux   GOARCH=amd64 go build -o build/syshealth-linux-amd64
-          GOOS=darwin  GOARCH=amd64 go build -o build/syshealth-darwin-amd64
-          GOOS=darwin  GOARCH=arm64 go build -o build/syshealth-darwin-arm64
-          GOOS=windows GOARCH=amd64 go build -o build/syshealth-windows-amd64.exe
+          GOOS=linux   GOARCH=amd64 go build -o build/syshealth-linux-amd64   ./...
+          GOOS=darwin  GOARCH=amd64 go build -o build/syshealth-darwin-amd64 ./...
+          GOOS=darwin  GOARCH=arm64 go build -o build/syshealth-darwin-arm64 ./...
+          GOOS=windows GOARCH=amd64 go build -o build/syshealth-windows-amd64.exe ./...
+          echo "Final build directory contents:"
+          ls -lh build
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -33,3 +37,6 @@ jobs:
             build/syshealth-darwin-amd64
             build/syshealth-darwin-arm64
             build/syshealth-windows-amd64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
